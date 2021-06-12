@@ -107,6 +107,7 @@ const NewToEthereum = styled.div`
 export const ConnectionModal = (props: Props) => {
 	const { isOpen, onClose } = props;
 	const { connector, activate } = useWeb3React();
+	// eslint-disable-next-line
 	const [_, setCachedConnection] = useLocalStorage<ConnectionType | null>(
 		'cachedConnection',
 		null,

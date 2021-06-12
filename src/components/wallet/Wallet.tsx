@@ -32,6 +32,7 @@ const ConnectWalletButton = styled.div`
 export const Wallet = () => {
 	const [isOpen, setIsOpen] = useState<boolean>(false);
 	const { account, active, deactivate } = useWeb3React<Web3Provider>();
+	// eslint-disable-next-line
 	const [_, setCachedConnection] = useLocalStorage<ConnectionType | null>(
 		'cachedConnection',
 		null,
