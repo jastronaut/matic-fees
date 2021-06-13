@@ -40,7 +40,6 @@ export const ThemeProvider = ({ children }: Props) => {
 	const reducer = (theme: Theme, action: Actions): Theme => {
 		switch (action.type) {
 			case ThemeActionsNames.TOGGLE:
-				console.log('poo', theme.name);
 				const newTheme =
 					theme.name === ThemeNames.Light
 						? themes[ThemeNames.Dark]

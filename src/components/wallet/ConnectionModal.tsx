@@ -9,6 +9,7 @@ import { injectedConnector } from '../../connectors';
 import { Gray2, Gray1, TextDark, TextLight } from '../../colors';
 import { MetamaskLogo } from '../icons/MetaMaskLogo';
 import { ConnectionType } from '../../hooks/useEagerConnect';
+import { ThemeNames } from '../../theme';
 
 type Props = {
 	isOpen: boolean;
@@ -42,6 +43,7 @@ const Dialog = styled(({ className, ...props }) => (
 ))`
 	border-radius: ${rem(12)};
 	font-family: 'Poppins', sans-serif;
+	background-color: ${(props) => props.theme.colors.backgroundModal};
 `;
 
 const Body = styled.section`
@@ -60,14 +62,14 @@ const ConnectWallet = styled.div`
 const Header = styled.div`
 	font-weight: 700;
 	font-size: ${rem(26)};
-	color: ${TextDark};
+	color: ${(props) => props.theme.text.colorDark};
 `;
 
 const SubHeader = styled.div`
 	font-weight: 400;
 	font-size: ${rem(16)};
 	line-height: ${rem(24)};
-	color: ${TextLight};
+	color: ${(props) => props.theme.text.colorLight};
 `;
 
 const Options = styled.section`
@@ -80,12 +82,15 @@ const OptionTile = styled.div`
 	justify-content: center;
 	align-items: center;
 	border-radius: ${rem(10)};
-	border: 1px solid ${Gray2};
+	border: 1px solid ${(props) => props.theme.colors.border};
 	padding: ${rem(30)};
 	transition: 200ms background-color ease;
 
 	&:hover {
-		background-color: ${Gray1};
+		/* background-color: ${Gray1}; */
+		background-color: ${({ theme }) =>
+			theme.name === ThemeNames.Dark ? '#1d1d1d' : theme.colors.border};
+		/* opacity: 0.8; */
 		cursor: pointer;
 	}
 `;
@@ -97,10 +102,21 @@ const Blurb = styled.div`
 	justify-content: center;
 	flex-wrap: wrap;
 	margin-top: 2rem;
+
+	> a,
+	> a:visited {
+		transition: 200ms opacity ease;
+		color: ${(props) => props.theme.colors.accent};
+	}
+
+	> a:hover {
+		transition: 200ms opacity ease;
+		opacity: 0.8;
+	}
 `;
 
 const NewToEthereum = styled.div`
-	color: ${TextDark};
+	color: ${(props) => props.theme.text.colorDark};
 	margin-right: ${rem(5)};
 `;
 
