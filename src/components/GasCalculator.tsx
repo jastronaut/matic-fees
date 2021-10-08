@@ -141,6 +141,7 @@ export const GasCalculator = () => {
 						throw new Error('um');
 					}
 					allTxs.push(...results);
+					return null;
 				});
 
 				console.log('all', allTxs);
@@ -184,7 +185,7 @@ export const GasCalculator = () => {
 		fetchTxs();
 		setTimeout(() => setIsLoading(false), 500);
 		// setIsLoading(false);
-	}, [account, active]);
+	}, [account, active, library]);
 
 	return (
 		<Container>
