@@ -77,7 +77,8 @@ const calcFailedCost = (txs: Transaction[]) => {
 };
 
 export const GasCalculator = () => {
-	const { account, active } = useWeb3React<Web3Provider>();
+	const { account, active, library } = useWeb3React<Web3Provider>();
+
 	const [isLoading, setIsLoading] = useState(false);
 	const [gasStats, setGasStats] = useState({
 		gasFeeMatic: 0,
@@ -99,17 +100,58 @@ export const GasCalculator = () => {
 
 		const fetchTxs = async () => {
 			try {
+				const accountNonce = await library?.getTransactionCount(account);
+
+				if (!accountNonce) {
+					throw new Error('why');
+				}
+
 				const txsResp = await makeRequest<TransactionsResponse>(
 					`https://api.polygonscan.com/api?module=account&action=txlist&address=${account}&startblock=1&endblock=99999999&sort=asc&apikey=${POLYSCAN_KEY}`,
 				);
 
-				const txs = txsResp.result;
+				let txs = txsResp.result;
+
+				const moretxspromises = [];
+				let page = 1;
+
+				const PAGE_OFFSET = 10_000;
+
+				for (let i = 0; i < accountNonce; i += PAGE_OFFSET) {
+					moretxspromises.push(
+						await makeRequest<TransactionsResponse>(
+							`https://api.polygonscan.com/api?module=account&action=txlist&address=${account}&startblock=1&endblock=99999999&sort=asc&page=${page}&offset=${PAGE_OFFSET}&apikey=${POLYSCAN_KEY}`,
+						),
+					);
+
+					page++;
+				}
+
+				const moretxs = await Promise.all(moretxspromises);
 
 				if (typeof txs === 'string') {
 					throw new Error('bad request!');
 				}
 
-				const totalTx = txs.length;
+				const allTxs: Transaction[] = [];
+				moretxs.map((tx) => {
+					const results = tx.result;
+
+					if (typeof results === 'string') {
+						throw new Error('um');
+					}
+					allTxs.push(...results);
+				});
+
+				console.log('all', allTxs);
+
+				if (typeof txs === 'string') {
+					throw new Error('bad request!');
+				}
+
+				console.log('txs', txs);
+
+				txs = allTxs;
 
 				const allGasUsed = txs.map((t) => Number.parseFloat(t.gasUsed));
 				const allGasPrices = txs.map((t) => Number.parseFloat(t.gasPrice));
@@ -128,8 +170,9 @@ export const GasCalculator = () => {
 					gasFiat: totalGasFees * curMaticPrice,
 					fiatSymbol: FiatOptions.USD,
 					totalGas,
-					totalTx,
-					gasPerTx: (allGasPrices.reduce((acc, cur) => acc + cur, 0) / totalTx) * 1e-9,
+					totalTx: accountNonce,
+					gasPerTx:
+						(allGasPrices.reduce((acc, cur) => acc + cur, 0) / accountNonce) * 1e-9,
 					failedTxs,
 					failedCost,
 				});
