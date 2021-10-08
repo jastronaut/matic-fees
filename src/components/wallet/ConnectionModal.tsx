@@ -6,7 +6,7 @@ import { useWeb3React } from '@web3-react/core';
 import { AbstractConnector } from '@web3-react/abstract-connector';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import { injectedConnector } from '../../connectors';
-import { Gray2, Gray1, TextDark, TextLight } from '../../colors';
+import { Gray1 } from '../../colors';
 import { MetamaskLogo } from '../icons/MetaMaskLogo';
 import { ConnectionType } from '../../hooks/useEagerConnect';
 import { ThemeNames } from '../../theme';
