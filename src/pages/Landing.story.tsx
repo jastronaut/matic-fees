@@ -1,4 +1,3 @@
-import { Story, Meta } from '@storybook/react';
 import { Landing as LandingComponent, FiatOptions, Props } from './Landing';
 
 const numberOptions = {

@@ -68,7 +68,6 @@ const calcFailedCost = (txs: Transaction[]) => {
 	let sum = 0;
 	for (let i = 0; i < txs.length; i++) {
 		if (Number.parseInt(txs[i].isError) !== 0) {
-			console.log(txs[i].isError);
 			sum = sum + Number.parseFloat(txs[i].gasPrice) * Number.parseFloat(txs[i].gasUsed);
 		}
 	}
@@ -77,7 +76,8 @@ const calcFailedCost = (txs: Transaction[]) => {
 };
 
 export const GasCalculator = () => {
-	const { account, active } = useWeb3React<Web3Provider>();
+	const { account, active, library } = useWeb3React<Web3Provider>();
+
 	const [isLoading, setIsLoading] = useState(false);
 	const [gasStats, setGasStats] = useState({
 		gasFeeMatic: 0,
@@ -99,17 +99,43 @@ export const GasCalculator = () => {
 
 		const fetchTxs = async () => {
 			try {
-				const txsResp = await makeRequest<TransactionsResponse>(
-					`https://api.polygonscan.com/api?module=account&action=txlist&address=${account}&startblock=1&endblock=99999999&sort=asc&apikey=${POLYSCAN_KEY}`,
-				);
+				const accountNonce = await library?.getTransactionCount(account);
 
-				const txs = txsResp.result;
+				if (!accountNonce) {
+					throw new Error('No transactions!');
+				}
+
+				const txsPages = [];
+				let page = 1;
+
+				const PAGE_OFFSET = 10_000;
+
+				for (let i = 0; i < accountNonce; i += PAGE_OFFSET) {
+					txsPages.push(
+						await makeRequest<TransactionsResponse>(
+							`https://api.polygonscan.com/api?module=account&action=txlist&address=${account}&startblock=1&endblock=99999999&sort=asc&page=${page}&offset=${PAGE_OFFSET}&apikey=${POLYSCAN_KEY}`,
+						),
+					);
+
+					page++;
+				}
+
+				const moretxs = await Promise.all(txsPages);
+
+				const txs: Transaction[] = [];
+				moretxs.map((tx) => {
+					const results = tx.result;
+
+					if (typeof results === 'string') {
+						throw new Error('bad request');
+					}
+					txs.push(...results);
+					return null;
+				});
 
 				if (typeof txs === 'string') {
 					throw new Error('bad request!');
 				}
-
-				const totalTx = txs.length;
 
 				const allGasUsed = txs.map((t) => Number.parseFloat(t.gasUsed));
 				const allGasPrices = txs.map((t) => Number.parseFloat(t.gasPrice));
@@ -120,16 +146,20 @@ export const GasCalculator = () => {
 					`https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd`,
 				);
 				const curMaticPrice = Number.parseFloat(maticPriceResp['matic-network']['usd']);
+				const gasFiat = totalGasFees * curMaticPrice;
+
 				const failedTxs = txs.filter((t) => Number.parseInt(t.isError) !== 0).length;
 				const failedCost = calcFailedCost(txs) * 1e-18;
+				const gasPerTx =
+					(allGasPrices.reduce((acc, cur) => acc + cur, 0) / accountNonce) * 1e-9;
 
 				setGasStats({
 					gasFeeMatic: totalGasFees,
-					gasFiat: totalGasFees * curMaticPrice,
+					gasFiat: gasFiat,
 					fiatSymbol: FiatOptions.USD,
 					totalGas,
-					totalTx,
-					gasPerTx: (allGasPrices.reduce((acc, cur) => acc + cur, 0) / totalTx) * 1e-9,
+					totalTx: accountNonce,
+					gasPerTx,
 					failedTxs,
 					failedCost,
 				});
@@ -141,7 +171,7 @@ export const GasCalculator = () => {
 		fetchTxs();
 		setTimeout(() => setIsLoading(false), 500);
 		// setIsLoading(false);
-	}, [account, active]);
+	}, [account, active, library]);
 
 	return (
 		<Container>
